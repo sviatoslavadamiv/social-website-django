@@ -1,5 +1,8 @@
 from django.contrib.auth.models import User
 from account.models import Profile
+import requests
+from django.core.files.base import ContentFile
+from urllib.parse import urlparse
 
 class EmailAUthBackend:
     """
@@ -20,8 +23,26 @@ class EmailAUthBackend:
         except User.DoesNotExist:
             return None
 
-def create_profile(backend, user, *args, **kwargs):
+def create_profile(backend, user, response,  *args, **kwargs):
     """
     Create user profile for social authentication.
     """
-    Profile.objects.get_or_create(user=user)
+    profile, created = Profile.objects.get_or_create(user=user)
+
+    if backend.name == 'google-oauth2':
+        photo_url = response.get('picture')
+
+        if photo_url and not profile.photo:
+            try:
+                response = requests.get(photo_url)
+                response.raise_for_status()
+
+                filename = urlparse(photo_url).path.split('/')[-1]
+                ext = filename.split('.')[-1] if '.' in filename else 'jpg'
+                final_name = f'{user.username}_google_photo.{ext}'
+
+                profile.photo.save(final_name, ContentFile(response.content), save=False)
+            except Exception as e:
+                raise e
+
+        profile.save()
