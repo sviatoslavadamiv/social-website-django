@@ -88,7 +88,9 @@ target/
 __pycache__/
 local_settings.py
 
-myblog/.env
+social_website/.env
 db.sqlite3
 
 media
+cert.crt
+cert.key
