@@ -5,6 +5,10 @@ from django.shortcuts import render
 from .forms import LoginForm, UserRegistrationForm, UserEditForm, ProfileEditForm
 from .models import Profile
 from django.contrib import messages
+from django.contrib.auth import authenticate, get_user_model, login
+from django.shortcuts import get_object_or_404, render
+
+User = get_user_model()
 
 # def user_login(request):
 #     if request.method == 'POST':
@@ -36,7 +40,6 @@ from django.contrib import messages
 def dashboard(request):
     return render(request, "account/dashboard.html", {"section": "dashboard"})
 
-
 def register(request):
     if request.method == "POST":
         user_form = UserRegistrationForm(request.POST)
@@ -53,7 +56,6 @@ def register(request):
     else:
         user_form = UserRegistrationForm()
         return render(request, "account/register.html", {"user_form": user_form})
-
 
 @login_required
 def edit(request):
@@ -75,4 +77,28 @@ def edit(request):
         request,
         "account/edit.html",
         {"user_form": user_form, "profile_form": profile_form},
+    )
+
+@login_required
+def user_list(request):
+    users = User.objects.all()
+    return render(
+        request,
+        'account/user/list.html',
+        {
+            'section': 'people',
+            'users': users,
+        }
+    )
+
+@login_required
+def user_detail(request, username):
+    user = get_object_or_404(User, username=username, is_active=True)
+    return render(
+        request,
+        'account/user/detail.html',
+        {
+            'section': 'people',
+            'user': user,
+        }
     )
