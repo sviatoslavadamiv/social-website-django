@@ -1,7 +1,10 @@
 import datetime
+
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
+
 from .models import Action
+
 
 def create_action(user, verb, target=None):
     # Check for any similar action

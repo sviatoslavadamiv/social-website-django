@@ -1,8 +1,10 @@
-from django.contrib.auth.models import User
-from account.models import Profile
-import requests
-from django.core.files.base import ContentFile
 from urllib.parse import urlparse
+
+import requests
+from django.contrib.auth.models import User
+from django.core.files.base import ContentFile
+
+from account.models import Profile
 
 
 class EmailAUthBackend:

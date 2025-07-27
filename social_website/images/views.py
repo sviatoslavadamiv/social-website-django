@@ -1,18 +1,16 @@
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from django.shortcuts import redirect, render, get_object_or_404
-from django.views.decorators.http import require_POST
-
-from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.http import HttpResponse
-
-from actions.utils import create_action
-from .forms import ImageCreateForm
-from .models import Image
-
 import redis
 from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
+
+from actions.utils import create_action
+
+from .forms import ImageCreateForm
+from .models import Image
 
 # Connect to redis
 r = redis.Redis(
@@ -34,7 +32,7 @@ def image_create(request):
             # Assign current user to the item
             new_image.user = request.user
             new_image.save()
-            create_action(request.user, 'bookmarked image', new_image)
+            create_action(request.user, "bookmarked image", new_image)
             messages.success(request, "Image added successfully")
             # Redirect to new created item detail view
             return redirect(new_image.get_absolute_url())
@@ -50,21 +48,23 @@ def image_create(request):
         },
     )
 
+
 def image_detail(request, id, slug):
     image = get_object_or_404(Image, id=id, slug=slug)
     # Increment total image views by 1
     total_views = r.incr(f"image:{image.id}:views")
     # Increment image ranking by 1
-    r.zincrby('image_ranking', 1, image.id)
+    r.zincrby("image_ranking", 1, image.id)
     return render(
         request,
         "images/image/detail.html",
         {
             "section": "images",
             "image": image,
-            'total_views': total_views,
+            "total_views": total_views,
         },
     )
+
 
 @login_required
 @require_POST
@@ -76,7 +76,7 @@ def image_like(request):
             image = Image.objects.get(id=image_id)
             if action == "like":
                 image.users_like.add(request.user)
-                create_action(request.user, 'likes', image)
+                create_action(request.user, "likes", image)
             else:
                 image.users_like.remove(request.user)
             return JsonResponse({"status": "ok"})
@@ -84,12 +84,13 @@ def image_like(request):
             pass
     return JsonResponse({"status": "error"})
 
+
 @login_required
 def image_list(request):
     images = Image.objects.all()
     paginator = Paginator(images, 8)
-    page = request.GET.get('page')
-    images_only = request.GET.get('images_only')
+    page = request.GET.get("page")
+    images_only = request.GET.get("images_only")
     try:
         images = paginator.page(page)
     except PageNotAnInteger:
@@ -98,46 +99,40 @@ def image_list(request):
     except EmptyPage:
         if images_only:
             # If AJAX request and page out of range return an empty page
-            return HttpResponse('')
+            return HttpResponse("")
         images = paginator.page(paginator.num_pages)
     if images_only:
         return render(
             request,
-            'images/image/list_images.html',
+            "images/image/list_images.html",
             {
-                'section': 'images',
-                'images': images,
-            }
+                "section": "images",
+                "images": images,
+            },
         )
     return render(
         request,
-        'images/image/list.html',
+        "images/image/list.html",
         {
-            'section': 'images',
-            'images': images,
-        }
+            "section": "images",
+            "images": images,
+        },
     )
+
 
 @login_required
 def image_ranking(request):
     # Get image ranking dictionary
-    image_ranking = r.zrange(
-        'image_ranking', 0, -1,
-        desc=True
-    )[:10]
+    image_ranking = r.zrange("image_ranking", 0, -1, desc=True)[:10]
     image_ranking_ids = [int(id) for id in image_ranking]
     # Get most viewed images
-    most_viewed = list(
-        Image.objects.filter(
-            id__in=image_ranking_ids
-        )
-    )
+    most_viewed = list(Image.objects.filter(id__in=image_ranking_ids))
     most_viewed.sort(key=lambda x: image_ranking_ids.index(x.id))
     return render(
         request,
-        'images/image/ranking.html',
+        "images/image/ranking.html",
         {
-            'section': 'images',
-            'most_viewed': most_viewed,
-        }
+            "section": "images",
+            "most_viewed": most_viewed,
+        },
     )
